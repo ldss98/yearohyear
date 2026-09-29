@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Year Oh Year</title>
+<meta name="description" content="A daily history game. Five events. Guess the year.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #2a1a0c;
+  --ink-soft: #5a4128;
+  --ink-faint: #8a6d4c;
+  --parch: #f1e2c1;
+  --parch-dark: #d9bf8c;
+  --accent: #7a1f14;
+  --good: #3f5a1e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background-color: #3a2a1a;
+  background-image: radial-gradient(ellipse at center, #4a3521 0%, #2a1c10 100%);
+  font-family: "IM Fell English", "Iowan Old Style", Georgia, serif;
+  color: var(--ink);
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  min-height: calc(100vh - 48px);
+  padding: 40px 36px 32px;
+  background-color: var(--parch);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(255,250,235,.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 90%, rgba(160,110,50,.25) 0%, transparent 60%),
+    radial-gradient(ellipse at center, transparent 55%, rgba(120,80,30,.35) 100%);
+  box-shadow: 0 10px 40px rgba(0,0,0,.55), inset 0 0 60px rgba(110,70,20,.35);
+  border-radius: 3px;
+}
+.sheet::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: .22;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .3  0 0 0 0 .12  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.frame {
+  position: absolute; inset: 12px;
+  border: 1.5px solid var(--ink-soft);
+  outline: 1px solid var(--ink-faint);
+  outline-offset: 4px;
+  pointer-events: none;
+  opacity: .55;
+}
+.content { position: relative; z-index: 1; }
+
+header { text-align: center; margin-bottom: 18px; }
+h1 {
+  font-family: "IM Fell English SC", "IM Fell English", Georgia, serif;
+  font-weight: normal;
+  font-size: 2.6rem;
+  letter-spacing: .04em;
+  margin: 0;
+  line-height: 1;
+}
+.sub { font-style: italic; color: var(--ink-soft); margin-top: 6px; font-size: 1.05rem; }
+.rule {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--ink-faint); margin: 16px 0; font-size: .9rem;
+}
+.rule::before, .rule::after { content: ""; flex: 1; height: 1px; background: var(--ink-faint); opacity: .7; }
+
+.status {
+  display: flex; justify-content: space-between;
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 1.05rem; color: var(--ink-soft);
+}
+.status b { color: var(--ink); font-weight: normal; }
+
+.pips { display: flex; justify-content: center; gap: 8px; margin: 14px 0 4px; }
+.pip { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink-soft); }
+.pip.done { background: var(--ink-soft); }
+.pip.now { background: var(--accent); border-color: var(--accent); }
+
+.event {
+  font-size: 1.65rem;
+  line-height: 1.3;
+  text-align: center;
+  margin: 28px 4px 26px;
+  min-height: 3.9em;
+  display: flex; align-items: center; justify-content: center;
+}
+
+form.guess { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: stretch; }
+input.year {
+  font-family: inherit;
+  font-size: 2rem;
+  width: 7ch;
+  text-align: center;
+  background: transparent;
+  color: var(--ink);
+  border: none;
+  border-bottom: 2px solid var(--ink);
+  padding: 4px 0;
+  outline: none;
+  -moz-appearance: textfield;
+}
+input.year::-webkit-outer-spin-button, input.year::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input.year::placeholder { color: var(--ink-faint); opacity: .6; }
+.era { display: flex; border: 1.5px solid var(--ink); border-radius: 2px; overflow: hidden; align-self: center; }
+.era button {
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 1.1rem;
+  background: transparent; color: var(--ink);
+  border: none; padding: 8px 14px; cursor: pointer;
+}
+.era button[aria-pressed="true"] { background: var(--ink); color: var(--parch); }
+
+.btn {
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: .05em;
+  background: var(--ink);
+  color: var(--parch);
+  border: none;
+  padding: 10px 30px;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 2px 0 rgba(0,0,0,.25);
+}
+.btn:hover { background: var(--accent); }
+.btn:disabled { opacity: .4; cursor: default; background: var(--ink); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); box-shadow: none; }
+.btn.ghost:hover { background: rgba(42,26,12,.08); }
+.error { color: var(--accent); font-style: italic; min-height: 1.3em; font-size: 1rem; }
+
+.reveal { text-align: center; }
+.reveal .label { font-style: italic; color: var(--ink-soft); }
+.reveal .answer {
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 3rem; line-height: 1.1; margin: 4px 0 10px;
+}
+.reveal .detail { color: var(--ink-soft); font-size: 1.1rem; }
+.points {
+  display: inline-block;
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 1.6rem;
+  margin: 14px 0 20px;
+  color: var(--accent);
+  transform: rotate(-3deg);
+  border: 2px solid var(--accent);
+  padding: 2px 14px;
+  border-radius: 3px;
+}
+
+.intro p { font-size: 1.15rem; line-height: 1.5; margin: 0 0 12px; }
+.intro ul { padding-left: 1.2em; margin: 0 0 22px; font-size: 1.1rem; line-height: 1.5; }
+.center { text-align: center; }
+
+.final .score {
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-size: 4rem; line-height: 1; text-align: center; margin: 8px 0 0;
+}
+.final .of { text-align: center; color: var(--ink-soft); font-style: italic; }
+.verdict { text-align: center; margin: 22px 0 8px; }
+.verdict .you { font-style: italic; color: var(--ink-soft); font-size: 1.1rem; }
+.verdict .who { font-family: "IM Fell English SC", Georgia, serif; font-size: 2.1rem; line-height: 1.15; margin: 4px 0 6px; }
+.verdict .why { font-size: 1.15rem; font-style: italic; }
+table.recap { width: 100%; border-collapse: collapse; margin: 18px 0 20px; font-size: 1rem; }
+table.recap td { padding: 7px 4px; border-bottom: 1px dotted var(--ink-faint); vertical-align: top; }
+table.recap td.n { text-align: right; white-space: nowrap; }
+table.recap td.p { text-align: right; width: 3.2em; font-family: "IM Fell English SC", Georgia, serif; }
+.small { font-size: .95rem; color: var(--ink-soft); }
+.actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.toast { min-height: 1.3em; font-style: italic; color: var(--good); }
+.countdown { font-family: "IM Fell English SC", Georgia, serif; font-size: 1.3rem; }
+
+.fade { animation: fade .45s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 480px) {
+  .sheet { padding: 32px 22px 26px; }
+  h1 { font-size: 2.1rem; }
+  .event { font-size: 1.4rem; }
+  .final .score { font-size: 3.3rem; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <div class="frame"></div>
+  <div class="content">
+    <header>
+      <h1>Year Oh Year</h1>
+      <div class="sub" id="dateline"></div>
+    </header>
+    <div id="app"></div>
+  </div>
+</main>
+
+<script src="events.js"></script>
+<script>
+/* =====================================================================
+   FIGURES  —  100 tiers, worst (index 0) to best (index 99).
+   Score 0–500 maps to a tier in 5-point bands.
+   ===================================================================== */
+const FIGURES = [
+  ["George Armstrong Custer", "Charged in confidently. Did not charge out."],
+  ["Publius Quinctilius Varus", "Marched three legions into a German forest. None came back."],
+  ["Æthelred the Unready", "Ill-advised, ill-prepared, and paying the Danes to go away."],
+  ["King John", "Lost his treasure in the Wash and his barons at Runnymede."],
+  ["Lady Jane Grey", "Queen for nine days. Not a long reign."],
+  ["Romulus Augustulus", "The last Western emperor, and a teenager nobody obeyed."],
+  ["Richard Cromwell", "Inherited a republic. Known thereafter as Tumbledown Dick."],
+  ["Marcus Licinius Crassus", "Richest man in Rome. Took on Parthia anyway."],
+  ["Lord Cardigan", "Led the Light Brigade gallantly into entirely the wrong valley."],
+  ["Guy Fawkes", "Found in the cellar, match in hand."],
+  ["Napoleon III", "Rode out to Sedan as an emperor, came back a prisoner."],
+  ["Edward II", "Brought the largest army to Bannockburn. Left in a hurry."],
+  ["Harold Godwinson", "Won at Stamford Bridge. Then came Hastings."],
+  ["Louis XVI", "Tried to slip away to Varennes. Was recognised."],
+  ["Emperor Nero", "Fiddled, allegedly, while Rome burned."],
+  ["Duke of Medina Sidonia", "Commanded the Armada. Hated the sea. The sea agreed."],
+  ["Charles I", "Firm views on divine right. Lost his head over them."],
+  ["Neville Chamberlain", "Came home waving a piece of paper."],
+  ["Bonnie Prince Charlie", "Got as far as Derby, then Culloden, then a boat."],
+  ["Henry VI", "Inherited two crowns and managed to lose both."],
+  ["Mary, Queen of Scots", "Fled to her cousin for help. A misjudgement."],
+  ["Mark Antony", "Chose Cleopatra over Rome. Rome chose Octavian."],
+  ["General John Burgoyne", "Gentleman Johnny, surrendered at Saratoga."],
+  ["Lord Cornwallis", "Handed over his sword at Yorktown."],
+  ["Pompey the Great", "Great, right up until Pharsalus."],
+  ["Harald Hardrada", "Last great Viking king. Last great Viking invasion."],
+  ["Kaiser Wilhelm II", "Dismissed Bismarck. Things went downhill."],
+  ["Robert Falcon Scott", "Reached the South Pole. Second."],
+  ["Sir Walter Raleigh", "Explorer, poet, favourite, and eventually beheaded."],
+  ["Anthony Eden", "A fine Foreign Secretary undone by Suez."],
+  ["Edward VIII", "Gave it all up within the year."],
+  ["Cardinal Wolsey", "Ran England for Henry VIII until he didn't."],
+  ["Thomas Becket", "Stood up to his king. His king had friends."],
+  ["King Canute", "Proved, famously, that the tide waits for no man."],
+  ["Boudica", "Burned three Roman towns. Then met the legions."],
+  ["Anne Boleyn", "Changed the course of the English Church. Paid for it."],
+  ["Vercingetorix", "United Gaul against Caesar, briefly."],
+  ["Thomas Cromwell", "Rose from a blacksmith's son to power, and fell just as fast."],
+  ["Richard III", "Fought bravely at Bosworth; spent five centuries under a car park."],
+  ["Owain Glyndŵr", "Last native Prince of Wales. Vanished into legend."],
+  ["Simon de Montfort", "Summoned a parliament; met his end at Evesham."],
+  ["The Earl of Mar", "Raised the standard in 1715. Couldn't decide what next."],
+  ["Hereward the Wake", "Held out in the Fens. Heroically, and briefly."],
+  ["Emperor Hadrian", "When in doubt, build a wall."],
+  ["Sir Thomas More", "A man for all seasons, except the one that counted."],
+  ["Cicero", "Rome's greatest orator. Talked himself into trouble."],
+  ["Charles XII of Sweden", "Brilliant, relentless, and undone at Poltava."],
+  ["Emperor Claudius", "Underestimated by all, conquered Britain anyway."],
+  ["Queen Mary I", "Made her mark; lost Calais."],
+  ["Samuel Pepys", "Watched the Great Fire and buried his parmesan."],
+  ["Sir Francis Walsingham", "Elizabeth's spymaster. Knew everything."],
+  ["Edward the Black Prince", "Captured a king at Poitiers; never became one himself."],
+  ["Hannibal Barca", "Won nearly every battle. Lost the war."],
+  ["Eleanor of Aquitaine", "Queen of France, then England, mother of two kings."],
+  ["Thomas Cranmer", "Wrote the Book of Common Prayer. Burned for his trouble."],
+  ["Samuel Johnson", "Wrote the dictionary, near enough single-handed."],
+  ["Florence Nightingale", "The Lady with the Lamp."],
+  ["William Pitt the Younger", "Prime Minister at twenty-four."],
+  ["Garibaldi", "Liberated Sicily with a thousand men in red shirts."],
+  ["Isambard Kingdom Brunel", "Bridges, tunnels, ships and a railway, all in a stovepipe hat."],
+  ["Captain James Cook", "Charted half the Pacific with remarkable precision."],
+  ["Sir Francis Drake", "Circumnavigated the globe; finished his game of bowls."],
+  ["Ferdinand Magellan", "Led the first voyage around the world, mostly."],
+  ["William Wallace", "Freedom, and victory at Stirling Bridge."],
+  ["Henry VII", "Won the crown at Bosworth and kept the books balanced."],
+  ["Otto von Bismarck", "Blood and iron, and a unified Germany."],
+  ["Oliver Cromwell", "Warts and all, the Lord Protector."],
+  ["Robert the Bruce", "Watched a spider, then won Bannockburn."],
+  ["Edward I", "The Hammer of the Scots."],
+  ["Henry V", "Once more unto the breach, and victory at Agincourt."],
+  ["Nicolaus Copernicus", "Put the Sun at the centre, correctly."],
+  ["Galileo Galilei", "And yet it moves."],
+  ["Charles Darwin", "Worked out where we all came from."],
+  ["Queen Victoria", "Reigned over a quarter of the world. Not amused."],
+  ["Catherine the Great", "Made Russia a great European power."],
+  ["Peter the Great", "Dragged Russia westward and built a capital from a swamp."],
+  ["Frederick the Great", "Soldier, philosopher, flautist, king."],
+  ["Gustavus Adolphus", "The Lion of the North, father of modern warfare."],
+  ["Duke of Marlborough", "Never lost a battle. Blenheim bears his name."],
+  ["Cyrus the Great", "Founded the largest empire the world had then seen."],
+  ["William the Conqueror", "Arrived in 1066 and never left."],
+  ["Alfred the Great", "Burned the cakes, beat the Danes, founded England."],
+  ["William Shakespeare", "All the world's a stage, and he owned it."],
+  ["Leonardo da Vinci", "Painter, engineer, anatomist, genius."],
+  ["Sir Isaac Newton", "Standing on the shoulders of giants, and taller still."],
+  ["Winston Churchill", "Never surrendered."],
+  ["Duke of Wellington", "Beat Napoleon at Waterloo, a near-run thing."],
+  ["Horatio Nelson", "England expected, and he did his duty."],
+  ["Emperor Augustus", "Found Rome brick and left it marble."],
+  ["Charlemagne", "Father of Europe, Emperor of the West."],
+  ["Genghis Khan", "Ruled from the Pacific to the Caspian."],
+  ["Elizabeth I", "The heart and stomach of a king, and of England too."],
+  ["Scipio Africanus", "The man who beat Hannibal."],
+  ["Belisarius", "Reconquered half the Roman world with a fraction of an army."],
+  ["Saladin", "Took Jerusalem and the respect of his enemies."],
+  ["Suleiman the Magnificent", "At its zenith, the Ottoman Empire was his."],
+  ["Napoleon Bonaparte", "Master of Europe, at Austerlitz at least."],
+  ["Constantine the Great", "Won at the Milvian Bridge and remade the Roman world."],
+  ["Julius Caesar", "Came, saw, conquered."],
+  ["Alexander the Great", "Undefeated. Wept that there were no more worlds to conquer."],
+];
+
+/* =====================================================================
+   GAME SETTINGS
+   ===================================================================== */
+const LAUNCH = Date.UTC(2026, 8, 29);   // Puzzle #1 = 29 Sept 2026
+const QUESTIONS_PER_DAY = 5;
+const SHUFFLE_SEED = 1066;
+const SITE = "yearohyear.com";
+
+/* ---------- helpers ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function shuffled(arr, seed) {
+  const r = mulberry32(seed), a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function todayIndex() {
+  const params = new URLSearchParams(location.search);
+  if (params.has("day")) return Math.max(0, parseInt(params.get("day"), 10) - 1 || 0);
+  const d = new Date();
+  return Math.max(0, Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - LAUNCH) / 864e5));
+}
+function eventsForDay(n) {
+  const perCycle = Math.floor(EVENTS.length / QUESTIONS_PER_DAY);
+  const cycle = Math.floor(n / perCycle), slot = n % perCycle;
+  return shuffled(EVENTS, SHUFFLE_SEED + cycle).slice(slot * QUESTIONS_PER_DAY, slot * QUESTIONS_PER_DAY + QUESTIONS_PER_DAY);
+}
+const astro = y => (y < 0 ? y + 1 : y);            // no year zero
+const fmtYear = y => (y < 0 ? `${-y} BC` : y < 500 ? `AD ${y}` : `${y}`);
+
+/* Older events are marked more generously:
+   the "window" is how far off you can be before scoring zero.
+   ~39 yrs for 2000, ~70 for 1800, ~194 for 1000, ~349 for AD 1, ~427 for 500 BC. */
+function scoreGuess(actual, guess) {
+  const diff = Math.abs(astro(actual) - astro(guess));
+  const window = 35 + (2026 - actual) * 0.155;
+  return { diff, points: Math.round(100 * Math.max(0, 1 - diff / window)) };
+}
+function figureFor(total) { return FIGURES[Math.min(FIGURES.length - 1, Math.floor(total / 5))]; }
+function mark(p) { return p >= 90 ? "🟩" : p >= 60 ? "🟨" : p >= 30 ? "🟧" : p > 0 ? "🟥" : "⬛"; }
+
+/* ---------- storage (safe if unavailable) ---------- */
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+/* ---------- state ---------- */
+const dayIdx = todayIndex();
+const puzzleNo = dayIdx + 1;
+const KEY = "yoy-day-" + puzzleNo;
+if (new URLSearchParams(location.search).has("reset")) store.del(KEY);
+const todays = eventsForDay(dayIdx);
+let state = store.get(KEY) || { answers: [] };   // answers: [{guess, points, diff}]
+let era = "AD";
+
+const app = document.getElementById("app");
+const total = () => state.answers.reduce((s, a) => s + a.points, 0);
+const save = () => store.set(KEY, state);
+document.getElementById("dateline").textContent =
+  `No. ${puzzleNo} · ` + new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+function pips(current) {
+  return `<div class="pips">${todays.map((_, i) =>
+    `<span class="pip ${i < state.answers.length ? "done" : ""} ${i === current ? "now" : ""}"></span>`).join("")}</div>`;
+}
+function statusBar(qNum) {
+  return `<div class="status"><span>Question <b>${qNum}</b> of ${QUESTIONS_PER_DAY}</span><span>Score <b>${total()}</b></span></div>`;
+}
+
+/* ---------- screens ---------- */
+function renderIntro() {
+  app.innerHTML = `
+    <div class="intro fade">
+      <div class="rule">❦</div>
+      <p>Five moments from history. Name the year of each.</p>
+      <ul>
+        <li>Type a year, choose AD or BC</li>
+        <li>Up to 100 points a question, 500 in all</li>
+        <li>The older the event, the more generous the marking</li>
+        <li>One attempt a day. New events at midnight</li>
+      </ul>
+      <div class="center"><button class="btn" id="go">Begin</button></div>
+    </div>`;
+  document.getElementById("go").onclick = renderQuestion;
+}
+
+function renderQuestion() {
+  const i = state.answers.length;
+  if (i >= QUESTIONS_PER_DAY) return renderFinal();
+  const [, text] = todays[i];
+  era = "AD";
+  app.innerHTML = `
+    <div class="fade">
+      ${statusBar(i + 1)}
+      ${pips(i)}
+      <div class="event">${text}</div>
+      <form class="guess" id="f" autocomplete="off">
+        <div class="row">
+          <input class="year" id="y" type="text" inputmode="numeric" maxlength="7" placeholder="????" aria-label="Year">
+          <div class="era" role="group" aria-label="Era">
+            <button type="button" data-era="AD" aria-pressed="true">AD</button>
+            <button type="button" data-era="BC" aria-pressed="false">BC</button>
+          </div>
+        </div>
+        <div class="error" id="err"></div>
+        <button class="btn" type="submit">Submit</button>
+      </form>
+    </div>`;
+  const y = document.getElementById("y");
+  y.focus();
+  app.querySelectorAll(".era button").forEach(b => b.onclick = () => {
+    era = b.dataset.era;
+    app.querySelectorAll(".era button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    y.focus();
+  });
+  document.getElementById("f").onsubmit = e => {
+    e.preventDefault();
+    const raw = y.value.trim().toUpperCase();
+    let bc = era === "BC" || /BC/.test(raw);
+    const num = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    const err = document.getElementById("err");
+    if (!num) { err.textContent = "Pray enter a year."; return; }
+    if (!bc && num > new Date().getFullYear()) { err.textContent = "That year has not yet come to pass."; return; }
+    if (bc && num > 10000) { err.textContent = "Rather too ancient, surely."; return; }
+    const guess = bc ? -num : num;
+    const actual = todays[i][0];
+    const { diff, points } = scoreGuess(actual, guess);
+    state.answers.push({ guess, points, diff });
+    save();
+    renderReveal(i);
+  };
+}
+
+function renderReveal(i) {
+  const [actual, text] = todays[i];
+  const a = state.answers[i];
+  const last = i === QUESTIONS_PER_DAY - 1;
+  const off = a.diff === 0 ? "Exactly right!" : `You said ${fmtYear(a.guess)}, ${a.diff} year${a.diff === 1 ? "" : "s"} out`;
+  app.innerHTML = `
+    <div class="fade">
+      ${statusBar(i + 1)}
+      ${pips(i)}
+      <div class="event" style="font-size:1.25rem;min-height:0;margin:20px 0 10px">${text}</div>
+      <div class="reveal">
+        <div class="label">It happened in</div>
+        <div class="answer">${fmtYear(actual)}</div>
+        <div class="detail">${off}</div>
+        <div class="points">+${a.points}</div>
+      </div>
+      <div class="center"><button class="btn" id="next">${last ? "See your verdict" : "Next"}</button></div>
+    </div>`;
+  const next = document.getElementById("next");
+  next.focus();
+  next.onclick = () => (last ? renderFinal() : renderQuestion());
+}
+
+function shareText() {
+  const [name] = figureFor(total());
+  return `Year Oh Year No. ${puzzleNo}: ${total()}/500\n${state.answers.map(a => mark(a.points)).join("")}\nI am ${name}\n${SITE}`;
+}
+async function share() {
+  const text = shareText(), toast = document.getElementById("toast");
+  try {
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({ text }); return; }
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); } catch (_) {} t.remove();
+  }
+  toast.textContent = "Copied. Paste it wherever you like.";
+}
+
+function renderFinal() {
+  const t = total();
+  const [name, why] = figureFor(t);
+  app.innerHTML = `
+    <div class="final fade">
+      <div class="rule">Final Tally</div>
+      <div class="score">${t}</div>
+      <div class="of">out of 500</div>
+      <div class="verdict">
+        <div class="you">Today, you are</div>
+        <div class="who">${name}</div>
+        <div class="why">${why}</div>
+      </div>
+      <table class="recap">
+        ${todays.map(([yr, text], i) => {
+          const a = state.answers[i];
+          return `<tr><td>${text}</td><td class="n">${fmtYear(yr)}<br><span class="small">you: ${fmtYear(a.guess)}</span></td><td class="p">${a.points}</td></tr>`;
+        }).join("")}
+      </table>
+      <div class="actions">
+        <button class="btn" id="share">Share</button>
+        <div class="toast" id="toast"></div>
+        <div class="small">Next puzzle in</div>
+        <div class="countdown" id="cd"></div>
+      </div>
+    </div>`;
+  document.getElementById("share").onclick = share;
+  const cd = document.getElementById("cd");
+  const tick = () => {
+    const now = new Date(), mid = new Date(now); mid.setHours(24, 0, 0, 0);
+    const s = Math.max(0, Math.floor((mid - now) / 1000));
+    cd.textContent = [s / 3600, (s % 3600) / 60, s % 60].map(v => String(Math.floor(v)).padStart(2, "0")).join(":");
+    if (s === 0) location.reload();
+  };
+  tick(); setInterval(tick, 1000);
+}
+
+/* ---------- start ---------- */
+if (state.answers.length >= QUESTIONS_PER_DAY) renderFinal();
+else if (state.answers.length > 0) renderQuestion();
+else renderIntro();
+</script>
+</body>
+</html>
